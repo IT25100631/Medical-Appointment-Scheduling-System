@@ -1,1 +1,109 @@
+package filehandler;
 
+import model.Payment;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class PaymentFileHandler {
+
+    private static final String FILE_PATH = "data/payments.txt";
+
+    // Reads all payments from payments.txt and returns them as a list
+    public static List<Payment> loadAllPayments() {
+        List<Payment> payments = new ArrayList<>();
+
+        File file = new File(FILE_PATH);
+        if (!file.exists()) {
+            return payments; // Return empty list if file doesn't exist yet
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    payments.add(Payment.fromFileString(line));
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading payments file: " + e.getMessage());
+        }
+
+        return payments;
+    }
+
+    // Saves the full list of payments to payments.txt (overwrites existing content)
+    public static void saveAllPayments(List<Payment> payments) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
+            for (Payment payment : payments) {
+                writer.write(payment.toFileString());
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            System.out.println("Error saving payments file: " + e.getMessage());
+        }
+    }
+
+    // Adds a single new payment to payments.txt (appends to end of file)
+    public static void addPayment(Payment payment) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH, true))) {
+            writer.write(payment.toFileString());
+            writer.newLine();
+        } catch (IOException e) {
+            System.out.println("Error adding payment: " + e.getMessage());
+        }
+    }
+
+    // Finds a payment by its ID — returns null if not found
+    public static Payment getPaymentById(String paymentId) {
+        for (Payment payment : loadAllPayments()) {
+            if (payment.getPaymentId().equals(paymentId)) {
+                return payment;
+            }
+        }
+        return null;
+    }
+
+    // Gets all payments made by a specific patient
+    public static List<Payment> getPaymentsByPatientId(String patientId) {
+        List<Payment> result = new ArrayList<>();
+        for (Payment payment : loadAllPayments()) {
+            if (payment.getPatientId().equals(patientId)) {
+                result.add(payment);
+            }
+        }
+        return result;
+    }
+
+    // Gets all payments with a specific status (e.g. "Pending")
+    public static List<Payment> getPaymentsByStatus(String status) {
+        List<Payment> result = new ArrayList<>();
+        for (Payment payment : loadAllPayments()) {
+            if (payment.getStatus().equalsIgnoreCase(status)) {
+                result.add(payment);
+            }
+        }
+        return result;
+    }
+
+    // Updates an existing payment (matches by paymentId, replaces the entry)
+    public static void updatePayment(Payment updatedPayment) {
+        List<Payment> payments = loadAllPayments();
+        for (int i = 0; i < payments.size(); i++) {
+            if (payments.get(i).getPaymentId().equals(updatedPayment.getPaymentId())) {
+                payments.set(i, updatedPayment);
+                break;
+            }
+        }
+        saveAllPayments(payments);
+    }
+
+    // Deletes a payment by its ID
+    public static void deletePayment(String paymentId) {
+        List<Payment> payments = loadAllPayments();
+        payments.removeIf(p -> p.getPaymentId().equals(paymentId));
+        saveAllPayments(payments);
+    }
+}
